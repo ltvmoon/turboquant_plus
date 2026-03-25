@@ -30,12 +30,23 @@ turbo3 perplexity is within **1.4% of q8_0** — quality target met.
 
 ## Speed (M5 Max 128GB)
 
-| Cache Type | MoE Gen tok/s | Compression | vs q8_0 |
-|------------|--------------|-------------|---------|
-| q8_0 | 85.5 | 2.0× | 1.00× |
-| **turbo3** | **~10.7** | **4.6×** | **0.13×** |
+### Prefill (wikitext-2, 32 chunks, flash attention)
 
-> **Speed optimization in progress.** The current ~8× speed gap is from the inverse WHT rotation in the dequant path (called per block during attention). A pre-rotate-queries optimization exists that moves the rotation to a single per-query op, but it requires per-head reshaping for GQA models — tracked in [#23](https://github.com/TheTom/turboquant_plus/issues/23).
+| Cache Type | Prefill tok/s | Compression | vs q8_0 |
+|------------|--------------|-------------|---------|
+| q8_0 | 2694 | 2.0x | 1.00x |
+| **turbo3 (fp16 WHT)** | **1074** | **4.9x** | **0.40x** |
+
+### Speed Optimization History
+
+| Optimization | Prefill tok/s | vs q8_0 | Notes |
+|-------------|--------------|---------|-------|
+| turbo3 fp32 WHT (initial) | 739 | 0.27x | full-precision inverse rotation |
+| **turbo3 fp16 WHT** | **1074** | **0.40x** | half-precision WHT butterfly (+45%) |
+| turbo3 no rotation | 1577 | 0.59x | rotation stripped (wrong quality, speed ceiling) |
+| q8_0 baseline | 2694 | 1.00x | — |
+
+> **Speed optimization ongoing.** The remaining 2.5x gap comes from redundant full-block dequant in flash attention (each SIMD thread independently dequants all 128 elements for 4-element access). SIMD cooperative dequant implemented for vec path, non-vec path next. Pre-rotate-queries was abandoned after discovering WHT and RoPE don't commute.
 
 ### Compression Quality (Python Prototype)
 
