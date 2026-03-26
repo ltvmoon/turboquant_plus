@@ -72,9 +72,9 @@ Codex independently reached the same conclusion: "Expert routing is an FFN signa
 ### NOT YET STARTED
 
 #### Rotation-Free via Outlier Channeling (Idea E from notes)
-**Potential:** Highest single improvement if viable. Eliminates WHT rotation entirely by isolating outlier channels at fp16 and quantizing the rest without rotation.
-**Test:** One-line kurtosis measurement on real KV tensors with top-k outlier channels removed. If kurtosis drops to ~3.0 without rotation, the approach works.
-**Status:** Not started. The dequant is now fast enough that eliminating rotation may not be the highest priority.
+**Status:** DEAD — tested 2026-03-26, does not work.
+**Test result:** Even removing 32 of 128 channels (25%), kurtosis stays at 8-50. WHT rotation gets it to 2.9. Some layers get WORSE after removing top channels (55.6 → 156.98). Heavy tails are a structural property of attention, not concentrated in outlier channels.
+**Why it fails:** WUSH paper was right — Hadamard is optimal among data-agnostic transforms. Outlier removal is model-dependent AND doesn't work. Would also need per-model calibration, killing TurboQuant's "no calibration" pitch.
 
 #### Fused Compressed Attention (Priority 6 from notes)
 **Potential:** Compute Q·K dot products directly on quantized indices without full dequant. Precompute Q·centroid table (8 values), then each K element is a table lookup instead of centroid lookup + multiply.
