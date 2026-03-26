@@ -29,7 +29,19 @@ Compresses transformer KV cache **4.6x** using PolarQuant + Walsh-Hadamard rotat
 | q4_0 | 4.0x | — | 6.142 | — |
 | **turbo3** | **4.6x** | **2747** | **5.460** | **1.02x** |
 
-**4.6x compression. q8_0 speed parity. 1% quality loss.** The trifecta.
+**4.6x compression. q8_0 speed parity at all context depths. 1% quality loss.** The trifecta.
+
+### Context Scaling (Verified 2K-32K)
+
+| Context | turbo3 tok/s | q8_0 tok/s | turbo3/q8_0 |
+|---------|-------------|-----------|-------------|
+| 2K | 4694 | 4756 | 0.987x |
+| 4K | 3049 | 3084 | 0.989x |
+| 8K | 2287 | 2299 | 0.995x |
+| 16K | 1737 | 1757 | 0.989x |
+| 32K | 1211 | 1217 | 0.995x |
+
+**Flat 99% of q8_0 speed regardless of context length.** See [Context Scaling Deep Dive](docs/context-scaling-deep-dive.md) for the full investigation.
 
 ### Speed Optimization Journey
 
@@ -39,9 +51,10 @@ Compresses transformer KV cache **4.6x** using PolarQuant + Walsh-Hadamard rotat
 | + fp16 WHT | 1074 | 0.40x |
 | + half4 vectorized butterfly | 1411 | 0.52x |
 | + graph-side WHT rotation | 2095 | 0.78x |
-| **+ block-32 storage** | **2747** | **1.02x** |
+| + block-32 storage | 2747 | 1.02x |
+| **+ optimized dequant** | **2524** | **0.98x** |
 
-> **3.72x total speedup** across 5 optimizations. Key insight: move WHT rotation from per-block dequant to graph-level ggml_mul_mat, then shrink blocks from 128 to 32 for GPU parallelism. See [Speed Experiments](docs/speed-experiments.md) for details.
+> The final number (2524 at 4K) is lower than the peak (2747 at 512) because longer context is naturally slower. The key metric is the **ratio** vs q8_0, which stays flat at 0.99x. See [Speed Experiments](docs/speed-experiments.md) for the full journey.
 
 ### Compression Quality (Python Prototype)
 
@@ -235,8 +248,9 @@ Detailed debugging logs, gotchas, and benchmarks from the llama.cpp port:
 - [Quality Benchmarks](docs/quality-benchmarks.md) — perplexity validation, bisection log, top-of-tree quality+speed table
 - [Speed Investigation](docs/turbo-speed-investigation.md) — Metal gotchas, fp16 WHT results, optimization history
 - [Speed Experiments](docs/speed-experiments.md) — the full 739 → 2747 tok/s optimization journey (5 experiments)
+- [Context Scaling Deep Dive](docs/context-scaling-deep-dive.md) — why turbo3 degraded at long context, how we fixed it (every failed approach documented)
 - [Pre-Rotate-Queries Investigation](docs/pre-rotate-queries-investigation.md) — why graph-side WHT failed initially, how we fixed it
-- [Quality Gate Script](scripts/turbo-quality-gate.sh) — pre-push perplexity check
+- [Quality + Speed Gate](scripts/turbo-quality-gate.sh) — pre-push script checking PPL AND context scaling ratio (required before merge)
 
 ## Contributing
 
