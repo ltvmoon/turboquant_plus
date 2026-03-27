@@ -232,7 +232,16 @@ To validate generality beyond TurboQuant, we tested sparse V on llama.cpp's stan
 
 Sparse V provides a **5% decode speedup on q8\_0** — a cache format with far cheaper per-position dequantization than turbo3. The benefit is smaller than turbo3's +22.8% at 32K because q8\_0's dequant is lightweight (simple scale-and-add vs centroid LUT + WHT rotation), but the attention sparsity still allows meaningful work to be skipped.
 
-This confirms that sparse V is a general flash attention optimization, not a TurboQuant-specific trick. Any quantized cache format — including NVFP4, q4\_0, and future formats — should benefit. Raw benchmark logs: [`threshold-ablation-logs/q8_0_sparse_v_ablation_m5.txt`](../threshold-ablation-logs/q8_0_sparse_v_ablation_m5.txt).
+**Quality validation (q8\_0):**
+
+| Metric | q8\_0 + sparse V | q8\_0 (no sparse V) |
+|--------|-----------------|---------------------|
+| PPL (8-chunk) | 6.1109 | 6.1109 |
+| NIAH single (9 tests) | 7/9 | 7/9 |
+
+PPL identical. NIAH identical — same two failures at 100% depth for 8K and 16K in both conditions. Sparse V has zero quality or retrieval impact on q8\_0, confirming it is purely a compute optimization.
+
+This confirms that sparse V is a general flash attention optimization, not a TurboQuant-specific trick. Any quantized cache format — including NVFP4, q4\_0, and future formats — should benefit. Raw benchmark logs: [`threshold-ablation-logs/q8_0_sparse_v_ablation_m5.txt`](../threshold-ablation-logs/q8_0_sparse_v_ablation_m5.txt), [`threshold-ablation-logs/q8_0_sparse_v_quality_m5.txt`](../threshold-ablation-logs/q8_0_sparse_v_quality_m5.txt).
 
 ---
 
