@@ -81,9 +81,9 @@ turbo4 decode is faster than turbo3 due to simpler nibble packing and direct-ext
 
 | Test | q8_0 | turbo4 | turbo3 + sparse V |
 |------|------|--------|-------------------|
-| Single needle (9 positions) | 7/9 | 7/9 | 9/9 |
+| Single needle (33 positions) | 30/33 (90.9%) | **31/33 (93.9%)** | 9/9 (3-pos) |
 
-turbo4 matches q8_0 retrieval accuracy.
+turbo4 beats q8_0 on retrieval (31/33 vs 30/33). Shared failure at 8K/100% is a model weakness, not quantization. See [turbo4 resurrection](docs/papers/turbo4-resurrection.md) for the full investigation.
 
 ### KL Divergence vs f16
 
@@ -283,7 +283,7 @@ The fork modifies these files from upstream llama.cpp:
 | Flag | Bits/val | Compression vs fp16 | Description |
 |------|----------|--------------------:|-------------|
 | `turbo3` | 3.5 | **4.6x** | 3-bit PolarQuant + WHT rotation. Best compression, q8_0 speed. |
-| `turbo4` | 4.25 | **3.8x** | 3-bit PolarQuant + 1-bit QJL. Better quality. |
+| `turbo4` | 4.25 | **3.8x** | 4-bit PolarQuant (16 centroids). Best quality. |
 | `q8_0` | 8 | 2.0x | llama.cpp default quantized cache. |
 | `q4_0` | 4 | 4.0x | llama.cpp 4-bit cache. |
 
@@ -372,7 +372,7 @@ Issues and PRs welcome. The main areas where help is needed:
 
 1. **CUDA backend** — port the Metal kernels to CUDA for NVIDIA GPU support
 2. **Upstream PR** — prepare llama.cpp contribution (CONTRIBUTING.md requirements)
-3. **turbo4 fix** — turbo4 (4-bit variant) broken by block size changes, needs update
+3. **turbo4 CUDA port** — turbo4 4-bit PolarQuant validated on Metal, needs CUDA port (see [issue #17](https://github.com/TheTom/llama-cpp-turboquant/issues/17))
 4. **Quality metrics** — multi-run statistics, additional task benchmarks
 
 ## License

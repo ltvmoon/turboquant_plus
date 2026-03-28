@@ -195,7 +195,7 @@ turbo4 4-bit has:
 | + Drop QJL | 6.1756 | 48.05 | QJL was hurting quality |
 | + 2+1 bit packing | 6.1756 | 63.79 | Eliminated byte-spanning reads |
 | + Direct-extract dequant | 6.1756 | 78.30 | Eliminated redundant full-block cache |
-| + 4-bit PolarQuant | **6.1250** | **79.58** | 16 optimal centroids |
+| + 4-bit PolarQuant | **6.1250** | **79.87** | 16 optimal centroids |
 
 Total improvement: PPL 679 → 6.13, decode 44 → 80 tok/s.
 
@@ -242,7 +242,7 @@ No degradation trend — unlike buun's QJL turbo4 which degraded from -0.28% at 
 
 ## 9. Current Status
 
-turbo4 4-bit PolarQuant is on the `experiment/turbo4-quality-investigation` branch. All changes are in Metal shaders only — no upstream dependencies.
+turbo4 4-bit PolarQuant is merged to `feature/turboquant-kv-cache` (main). `TURBO4_USE_4BIT` ifdef enables 4-bit on Metal by default, legacy 3-bit+QJL on CUDA until ported.
 
 ### Prefill Context Scaling
 
@@ -260,8 +260,12 @@ turbo4 prefill matches or exceeds q8\_0 at all context lengths. Compressed cache
 
 **What works:**
 - PPL: +0.23% vs q8_0 (best quantized KV cache quality we've tested)
-- Decode: 93% of q8_0 (matching turbo3)
+- Decode: 79.87 tok/s, 93% of q8_0 (faster than turbo3's 76.84)
 - Prefill: 101-105% of q8_0 across all context lengths
+- NIAH: 31/33 (93.9%) — beats q8_0 (30/33, 90.9%)
+- KLD: 0.0096 (40% lower than turbo3, matches q4_0 same-top-p)
+- Dense model: matches q8_0 decode (17.25 vs 17.17 tok/s)
+- Real-world PDF (24K): 63.7 tok/s decode (20% faster than turbo3's 53.3)
 - Sparse V: active and compatible
 - Long context: stable (no QJL degradation)
 
