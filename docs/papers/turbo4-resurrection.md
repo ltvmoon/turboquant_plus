@@ -328,8 +328,8 @@ buun's CUDA data confirms:
 
 The finding that QJL hurts quality for attention workloads has been independently confirmed:
 
-- **@Aaryan-Kapoor** (2026-03-26): "Dropped QJL (Algorithm 2). I independently found the same thing." Converged on all-bits-to-Lloyd-Max centroids independently.
+- **@Aaryan-Kapoor** (2026-03-25): Independently implemented Algorithm 1 (MSE) only, without QJL. Convergence on the PolarQuant-only approach from a separate implementation.
 - **@scos-lab** (2026-03-28): Measured PPL degradation quantitatively: "Paper (Prod keys) +300% vs MSE (both) +7.6% on GPT-2. QJL adds variance that softmax amplifies. Low variance (MSE) beats unbiasedness (Prod)."
-- **@AmesianX** — Blackwell DGX Spark (2026-03-29): Initial QJL implementation hurt quality. Root cause identified: correlation between MSE WHT and QJL SRHT rotations. Fixed by using independent sign patterns. First working QJL via independent random seeds.
-- **@Arclabs001/YATQ** (2026-03-29): Independently confirmed: "WHT + QJL + MSE is the solution!" using separate random seeds for MSE vs QJL rotations. Quantified QJL variance explosion through softmax.
-- **@elusznik** — upstream PR #21089 (2026-03-27): Implemented CPU TurboQuant without QJL, validating the PolarQuant-only approach for the upstream llama.cpp landing.
+- **@AmesianX** — Blackwell DGX Spark (2026-03-30): Initial QJL implementation hurt quality. Root cause identified: correlation between MSE WHT and QJL SRHT rotations. Fixed by using independent sign patterns. First working QJL via independent random seeds.
+- **@Arclabs001/YATQ** (2026-03-28): Quantified QJL variance explosion through softmax. Found that QJL works when using separate random seeds for MSE vs QJL rotations ("WHT + QJL + MSE is the solution!"), confirming the root cause is rotation correlation, not QJL itself.
+- **@elusznik** — upstream PR #21089 (2026-03-27): Implemented CPU TurboQuant without QJL for the first upstream PR, scoping QJL as follow-up work.

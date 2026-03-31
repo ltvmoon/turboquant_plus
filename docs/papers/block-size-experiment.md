@@ -289,6 +289,6 @@ The derived macros (`NL_TURBO3`, `NL_TURBO3_VEC`, `NL_TURBO2`, `NL_TURBO2_VEC`) 
 
 The block size 128 finding has been independently confirmed:
 
-- **@dusterbloom** — RTX 3090 (2026-03-29): Validated block_size=128 results across 5 model families with TBQ3 Flash Attention. Zero quality regression.
-- **@seanrasch** — RTX 3090 (2026-03-29): PPL confirmed identical on turbo3/turbo2 with block_size=128 vs QK=32 baseline. CUDA warp-to-block mapping fix (PR #32) enabled correct 128-element block support.
-- **@AmesianX** — Blackwell DGX Spark (2026-03-29): Used block size 256 (QK_K) for fused FA kernels. Different tradeoff: 256 gives slightly better compression but our testing shows 128 is better quality-per-bit on smaller models (7B-14B).
+- **@dusterbloom** — RTX 3090 (2026-03-30): Tested TBQ3 Flash Attention across 5 model families with block_size=128 builds. Results consistent with our Metal findings.
+- **@HyperionMS2040** — RTX 3090 (2026-03-30): CUDA warp-to-block mapping fix (PR #32) enabled correct block_size=128 support on CUDA. PPL validated on multiple models after fix.
+- **@AmesianX** — Blackwell DGX Spark (2026-03-30): Used block size 256 (QK_K) for fused FA kernels. Different tradeoff: 256 gives slightly better compression but our testing shows 128 is better quality-per-bit on smaller models (7B-14B).

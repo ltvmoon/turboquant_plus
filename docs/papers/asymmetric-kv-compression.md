@@ -216,14 +216,20 @@ These findings have been independently confirmed by multiple researchers:
 - All degradation from K compression, V has zero effect
 - Boundary layer gap scales with K compression (-0.001 at 4-bit K, -0.010 at 2-bit K)
 
-**@HyperionMS2040** — 10-model CUDA sweep, RTX 3090 (2026-03-31):
-- Qwen2.5-7B: +3.6% PPL symmetric turbo3 vs +0.5% on Llama 3.1 8B
+**@HyperionMS2040** — 10-model CUDA sweep, RTX 3090 (2026-03-30):
+- Qwen2.5-7B symmetric turbo3: catastrophic (PPL 3,472). Llama 3.1 8B symmetric turbo3: +6.4%
+- q8_0/turbo4 "lossless across all tested architectures" (4 architectures)
 - Confirms model-family-dependent sensitivity pattern
 
 **AMD HIP validation** — RX 9070 XT, gfx1201 (2026-03-29):
 - Asymmetric q8_0/turbo4 confirmed: +1.0% PPL
 - Symmetric catastrophic: PPL 81,277 (turbo3/turbo3 on Qwen2.5-7B Q4_K_M)
 - Consistent with Metal and CUDA findings
+- (Author's own testing on Windows AMD hardware)
+
+**@jesusmb1995** — Vulkan backend, Mistral-7B Q4_K_S (2026-03-31):
+- Mixed K/V Vulkan results support asymmetric thesis: q8_0-K + pq3_0-V = PPL 6.9426 (+0.64%), f16-K + pq4_0-V = PPL 6.8901 (-0.12%)
+- V compression nearly free when K precision maintained, consistent across a fourth GPU backend (Vulkan)
 
 ---
 

@@ -353,18 +353,18 @@ Kamradt single-needle methodology. 104B decode is slow (~8 t/s), so 16K tests ti
 The key findings from this stress test have been independently confirmed:
 
 **Asymmetric K/V rescue (Sections 2, 8):**
-- **@HyperionMS2040** — RTX 3090, 10-model CUDA sweep (2026-03-31): q8_0/turbo4 "lossless across all tested architectures." Confirmed model-family-dependent sensitivity: Qwen2.5-7B +3.6% symmetric vs +0.5% on Llama 3.1 8B.
+- **@HyperionMS2040** — RTX 3090, 10-model CUDA sweep (2026-03-30): q8_0/turbo4 "lossless across all tested architectures" (4 architectures validated). Confirmed model-family-dependent sensitivity: Qwen2.5-7B symmetric turbo3 catastrophic (PPL 3,472) vs Llama 3.1 8B symmetric turbo3 +6.4%.
 - **@sztlink** — RTX 4090, Qwen3-4B (2026-03-31): Full asymmetric matrix confirms V compression is completely free (1.000 cosine similarity with fp16-K + 2bit-V). All degradation from K.
-- **AMD HIP** — RX 9070 XT (2026-03-29): Asymmetric confirmed across third GPU vendor.
+- **AMD HIP** — RX 9070 XT, gfx1201 (2026-03-29): Asymmetric q8_0/turbo4 confirmed at +1.0% PPL. (Author's own testing on Windows AMD hardware.)
 
 **turbo3 prefill faster than q8_0 at long context (Sections 3, 8):**
-- **@spiritbuun** — RTX 3090 (2026-03-28): 98.8% of q8_0 prefill speed with dequant-then-MMA path.
-- **@AmesianX** — Blackwell DGX Spark (2026-03-29): turbo decode 63.5 t/s, faster than q8_0 (50.1 t/s) at 8K context.
-- **@dusterbloom** — RTX 3090 (2026-03-29): Decode faster on 4/5 models with TBQ3 Flash Attention.
-- **@HyperionMS2040** — RTX 3090 (2026-03-31): Asymmetric q8_0-K/turbo3-V 14% faster decode than symmetric turbo3/turbo3.
+- **@spiritbuun** — RTX 3090 (X collaborator, ~2026-03-28): Reported near-parity prefill speed with dequant-then-MMA path on CUDA.
+- **@AmesianX** — Blackwell DGX Spark (2026-03-30): turbo decode 63.5 t/s, faster than q8_0 (50.1 t/s) at 8K context.
+- **@dusterbloom** — RTX 3090 (2026-03-30): Decode faster on 4/5 models with TBQ3 Flash Attention.
+- **@HyperionMS2040** — RTX 3090 (2026-03-30): Asymmetric q8_0-K/turbo3-V 14% faster decode than symmetric turbo3/turbo3 (120.9 vs 106 t/s).
 
 **macOS GPU memory wall (Section 5):**
-- **@treblewoe** (2026-03-31): Confirmed the wall exists. Reported kernel panics at >90% allocation under sustained load (Minimax M2.5 3-bit starting at 100GB). Recommended 90% as safe ceiling. Docs updated accordingly.
+- **@treblewoe** (X collaborator, 2026-03-31): Confirmed the wall exists. Reported kernel panics at >90% allocation under sustained load (Minimax M2.5 3-bit starting at 100GB). Recommended 90% as safe ceiling. Docs updated accordingly.
 
 ---
 
