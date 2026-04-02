@@ -27,6 +27,17 @@ cmake --build build --config Release -j
 cmake -B build -DGGML_HIP=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build build --config Release -j
 
+# AMD (ROCm/HIP) on Windows — clang requires explicit optimization flags
+cmake -S . -B build -G Ninja \
+  -DGPU_TARGETS=gfx1201 \
+  -DGGML_HIP=ON \
+  -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS_RELEASE="-O3 -DNDEBUG" \
+  -DCMAKE_CXX_FLAGS_RELEASE="-O3 -DNDEBUG"
+cmake --build build --config Release
+
 # Windows (CUDA, use Developer Command Prompt or WSL2)
 cmake -B build -DGGML_CUDA=ON
 cmake --build build --config Release -j
