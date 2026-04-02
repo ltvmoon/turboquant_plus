@@ -4,7 +4,7 @@
 Independent Researcher
 GitHub: [@TheTom](https://github.com/TheTom)
 
-**Code:** [PR #45](https://github.com/TheTom/llama-cpp-turboquant/pull/45) — branch `pr/tq4-weight-compression` (Metal only, CUDA port needed)
+**Code:** [PR #45](https://github.com/TheTom/llama-cpp-turboquant/pull/45) — branch `pr/tq4-weight-compression` (Metal + CUDA)
 **Getting started:** [docs/getting-started.md](https://github.com/TheTom/turboquant_plus/blob/main/docs/getting-started.md)
 
 ---
@@ -29,7 +29,7 @@ The resulting hybrid policy (Config I: TQ4_1S for attention + FFN gate/up, nativ
 
 Llama-family models show a steeper quality/compression tradeoff: the same WHT-rotated quantization that costs +1-4% on Qwen/Phi costs +5-16% on Llama depending on config. However, even the most aggressive Llama config (Hybrid, +16% PPL) beats standard Q4_K_M in both quality and speed at the same model size. A Premium config (TQ4_1S attention + Q5_K/Q6_K FFN) achieves +5.8% PPL — a viable tradeoff for 29% size reduction on a 70B model.
 
-Tested on Qwen2.5-1.5B, Qwen2.5-72B, Qwen3.5-27B, Qwen3.5-35B MoE, Phi-4 14B, and Llama 3.1 70B on Apple Silicon (M5 Max). Metal only. NIAH retrieval passes on all tested models and configs.
+Tested on Qwen2.5-1.5B, Qwen2.5-72B, Qwen3.5-27B, Qwen3.5-35B MoE, Phi-4 14B, and Llama 3.1 70B on Apple Silicon (M5 Max) and NVIDIA CUDA (GTX 1080 Ti, RTX 5090). NIAH retrieval passes on all tested models and configs.
 
 ---
 
@@ -370,7 +370,7 @@ Based on testing across 5 models and 3 model families:
 
 2. **Policy developed on 1.5B Qwen.** The ablation experiments were primarily on Qwen2.5-1.5B. The policy transfers well to larger Qwen models (+1.3-1.4%) but not to Llama. A per-model sensitivity profiler may be needed for production deployment across model families.
 
-3. **Metal only.** All speed results are Apple Silicon (M5 Max). Tan's original TQ3_1S has CUDA support. CUDA porting of the Metal-specific optimizations (cooperative SIMD, NR0=8 amortization) is future work.
+3. **CUDA decode gap.** Metal achieves 94-102% of Q8_0 decode via cooperative SIMD (NR0=8 amortization). CUDA achieves 39-55% of Q8_0 depending on GPU generation (signalnine's fused kernel, V8/V12). The gap is due to cross-warp communication overhead. Optimization is ongoing.
 
 4. **No comparison to GPTQ/AWQ/QuIP#.** We compare against q8_0, Q4_K, and Q4_K_M baselines within llama.cpp. Comparison to dedicated weight quantization frameworks is future work.
 
