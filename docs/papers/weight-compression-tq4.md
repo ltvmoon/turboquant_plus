@@ -232,7 +232,15 @@ Weight compression and KV compression stack cleanly. Tested on Qwen3.5-35B-A3B M
 
 Config I + turbo3 KV: **59% of baseline total memory at 32K context, +1.4% PPL, 97% decode.** The errors from weight compression and KV compression do not compound meaningfully.
 
-### 4.4 KL Divergence
+### 4.4 Independent Stacking Validation
+
+An [independent Python/PyTorch implementation](https://github.com/dhawalc/turboQuantDC) (662 tests, MIT license) confirmed the stacking result on RTX 4090 with Llama 3.1 8B: TQ4_1S weights + turbo3 KV achieved 100K context in 5.8 GiB total. At 8K context, turbo3 was actually *faster* than f16 KV (86.5 vs 78.4 t/s) due to reduced VRAM pressure. PPL impact of turbo3 KV: +0.67% on top of weight compression, consistent with our +1.4% combined measurement.
+
+The same implementation independently confirmed boundary layer protection (first 2 + last 2 layers recovering ~90% of quality gap) and found that the original paper's QJL correction stage hurts autoregressive generation quality, consistent with our turbo4 resurrection finding that QJL should be removed.
+
+Full community results across 12+ GPUs, 11+ models, and 10+ independent testers are tracked in [weight-compression-results.md](../weight-compression-results.md).
+
+### 4.5 KL Divergence
 
 Measured on Qwen3.5-35B-A3B MoE (8 chunks, vs q8_0 baseline):
 
