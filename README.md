@@ -641,14 +641,14 @@ MLX decode matches llama.cpp. Prefill 37% slower (lazy graph vs pre-compiled).
 
 ```python
 import mlx_lm
-from mlx_lm.models.cache import make_turbo_cache
+from mlx.nn.layers.turbo_kv_cache import make_turbo_cache
 
 model, tokenizer = mlx_lm.load("mlx-community/Qwen2.5-7B-Instruct-8bit")
 cache = make_turbo_cache(model, bits=4)  # K=FP16, V=turbo4, boundary 2+2
 response = mlx_lm.generate(model, tokenizer, prompt="Hello!", prompt_cache=cache)
 ```
 
-Requires: [TheTom/mlx](https://github.com/TheTom/mlx/tree/feature/turboquant-plus) + [TheTom/mlx-lm](https://github.com/TheTom/mlx-lm/tree/feature/turboquant-kv)
+Requires: [TheTom/mlx](https://github.com/TheTom/mlx/tree/feature/turboquant-plus) (branch `feature/turboquant-plus`) + stock [mlx-lm](https://github.com/ml-explore/mlx-lm)
 
 ### What's implemented
 - TurboQuant encode/decode using `mx.hadamard_transform` (MLX built-in)
@@ -659,12 +659,31 @@ Requires: [TheTom/mlx](https://github.com/TheTom/mlx/tree/feature/turboquant-plu
 - All findings from llama.cpp TurboQuant+ papers applied and validated
 - Beta distribution centroids, boundary layers, asymmetric K/V, dual SRHT signs, NR0=2 multi-row amortization
 
-### Status
+### Status (commit [`cb162e51`](https://github.com/TheTom/mlx/commit/cb162e51))
 - **Experimental** — working end-to-end, not yet production-hardened
-- 7B dense: 93% baseline decode, +0.04% PPL, KLD 0.000305, NIAH 30/30
-- Fused V kernel eliminates double-storage (zero extra memory)
-- Tiled kernel for long-context scaling (pending clean benchmark)
-- Not yet submitted upstream
+- Two-pass TurboFlash kernel (B=64) inspired by Eric Kryski's architecture
+- Asymmetric K=FP16, V=turbo4, boundary=2
+
+**Qwen2.5-7B-Instruct-8bit (dense, 24/28 layers, M5 Max)**
+
+| Context | Decode vs Baseline |
+|---------|-------------------|
+| All (7-1261 tok) | **100%** |
+
+PPL: +0.04% | KLD: 0.000305 | NIAH: 30/30 | Top-1: 100%
+
+**Qwen3.5-35B-A3B-4bit (MoE, 6/10 KV layers, M5 Max)**
+
+| Context | Baseline Gen | Turbo Gen | vs Baseline |
+|---------|-------------|----------|-------------|
+| 128 | 128.6 | 129.1 | **100.4%** |
+| 1K | 127.1 | 128.3 | **101.0%** |
+| 4K | 123.8 | 124.7 | **100.7%** |
+| 16K | 113.2 | 113.2 | **100.0%** |
+| 32K | 102.7 | 102.8 | **100.1%** |
+| 64K | 89.4 | 90.5 | **101.2%** |
+| 128K | 71.3 | 69.2 | 97.1% |
+| 256K | 52.2 | 51.5 | 98.7% |
 
 See [MLX Swift port](https://github.com/ekryski/mlx-swift-lm/pull/7) for the Swift/iOS implementation (separate effort with Eric Kryski).
 
