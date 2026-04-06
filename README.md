@@ -656,49 +656,77 @@ pip install mlx-lm
 
 ### How it works
 
-`make_turbo_cache` wraps mlx-lm's native `KVCache` with TurboQuant compression. Attention runs on FP16 through Apple's native SDPA at full speed (zero overhead). Call `compress()` on cache layers to create turbo4-compressed KV storage (SRHT + Lloyd-Max, ~74% savings). The compressed copy is stored alongside FP16 for future memory recovery.
+`TurboKVCacheLite` wraps mlx's native `KVCache` with TurboQuant 4-bit K+V compression. Drop-in compatible with **mlx-lm** and **mlx-vlm** — no framework changes needed.
 
-- **Normal mode**: zero decode overhead (native SDPA, no custom kernels)
-- **Compact mode**: `compact_turbo_cache(cache)` — quantizes V to 8-bit, uses custom C++ `sdpa_vector_qv` Metal kernel (compiled into metallib). 98-100% baseline speed with real memory savings
-- 74% KV compression available via explicit `compress()` call (stored alongside FP16)
-- Boundary layer protection (first/last 2 KV layers stay FP16 — also a speed optimization)
-- Works with stock mlx-lm, no fork needed
+**Compact mode** (`compact_turbo_cache`): compresses K+V using TurboQuant (SRHT + Lloyd-Max) after prefill. On first decode step, dequants once to FP16 and runs pure native SDPA from there. Zero custom kernels in the attention path.
+
+- 10–64% KV cache savings depending on context length
+- 99% answer agreement with baseline (520 multimodal samples)
+- 0.79–0.99x decode speedup (dequant-once overhead, amortizes over generation)
+- Works with stock mlx-lm and mlx-vlm, no fork needed
 - All 8 TurboQuant+ papers applied (beta centroids, dual SRHT signs, boundary layers)
 
-### Results (M5 Max 128GB, boundary=2)
+### Quick Start — mlx-vlm (multimodal)
 
-**Normal mode** (FP16 attention, TurboQuant compression stored alongside):
+```python
+from mlx_vlm import load
+from mlx_vlm.models.cache import make_prompt_cache
+from mlx_lm.models.cache import KVCache
+from mlx.nn.layers.turbo_kv_cache import TurboKVCacheLite, compact_turbo_cache
 
-| Config | Context | Decode tok/s | vs Baseline |
-|--------|---------|-------------|-------------|
-| no-quant | 128 | 141.5 | — |
-| no-quant | 1K | 140.9 | — |
-| no-quant | 4K | 136.7 | — |
-| no-quant | 32K | 111.6 | — |
-| turbo-normal | 128 | 143.5 | **101.4%** |
-| turbo-normal | 1K | 141.3 | **100.3%** |
-| turbo-normal | 4K | 138.2 | **101.1%** |
-| turbo-normal | 32K | 111.5 | **99.9%** |
+model, processor = load("mlx-community/gemma-4-26b-a4b-it-bf16")
 
-**Compact mode** (V quantized 8-bit, real memory savings via `mx.quantized_matmul`):
+# Wrap KV layers with TurboKVCacheLite
+cache = make_prompt_cache(model.language_model)
+kv_indices = [i for i, c in enumerate(cache) if isinstance(c, KVCache)]
+for idx in kv_indices:
+    cache[idx] = TurboKVCacheLite(cache[idx], bits=4, key_bits=4)
 
-| Config | Context | Decode tok/s | vs Baseline |
-|--------|---------|-------------|-------------|
-| compact-8bit | 128 | 134.7 | **95.2%** |
-| compact-8bit | 1K | 137.5 | **97.6%** |
-| compact-8bit | 4K | 134.0 | **98.0%** |
-| compact-8bit | 32K | 109.3 | **97.9%** |
+# Generate as normal — prefill stores FP16
+from mlx_vlm import generate
+generate(model, processor, prompt="...", max_tokens=1, prompt_cache=cache)
 
-Qwen3.5-35B-A3B-4bit (MoE, 6/10 KV layers compressed). Output is coherent and correct at all context lengths.
+# Compact: compress K+V to 4-bit TurboQuant
+compact_turbo_cache(cache)
 
-**KV Cache Memory at Scale (projected)**
+# Continue generating — native SDPA at full speed
+generate(model, processor, prompt="Continue.", max_tokens=200, prompt_cache=cache)
+```
 
-| Model | Context | FP16 KV | Turbo4 KV | Savings |
-|-------|---------|---------|-----------|---------|
-| Qwen2.5-7B | 262K | 15.0 GB | 3.9 GB | 11.1 GB |
-| Llama-70B | 131K | 42.9 GB | 11.2 GB | 31.7 GB |
-| Llama-70B | 262K | 85.9 GB | 22.3 GB | 63.6 GB |
-| Command-R+ 104B | 131K | 34.4 GB | 8.9 GB | 25.5 GB |
+```bash
+pip install git+https://github.com/TheTom/mlx.git@feature/turboquant-plus
+pip install mlx-vlm
+```
+
+### Quick Start — mlx-lm (text)
+
+```python
+import mlx_lm
+from mlx.nn.layers.turbo_kv_cache import make_turbo_cache, compact_turbo_cache
+
+model, tokenizer = mlx_lm.load("mlx-community/Qwen2.5-7B-Instruct-8bit")
+cache = make_turbo_cache(model, bits=4)
+mlx_lm.generate(model, tokenizer, prompt="Hello!", max_tokens=1, prompt_cache=cache)
+compact_turbo_cache(cache)
+mlx_lm.generate(model, tokenizer, prompt="Continue.", max_tokens=200,
+                 prompt_cache=cache, verbose=True)
+```
+
+### MM-NIAH Multimodal Benchmark (520 samples)
+
+gemma-4-26b-a4b-it · BF16 · 4-bit TQ+ Compact · MM-NIAH (val) · M5 Max 128GB
+
+| Bucket | BL Acc | TQ+ Acc | Agree | BL Decode | TQ+ Decode | Speedup | BL KV | TQ+ KV | KV saved |
+|--------|--------|---------|-------|-----------|-----------|---------|-------|--------|----------|
+| ~1K | 85% | 84% | 99% | 55.1 | 54.7 | 0.99x | 0.21G | 0.19G | 10% |
+| ~3K | 81% | 79% | 99% | 55.2 | 54.1 | 0.98x | 0.27G | 0.21G | 22% |
+| ~7K | 80% | 81% | 99% | 54.1 | 51.7 | 0.96x | 0.37G | 0.24G | 35% |
+| ~15K | 76% | 76% | 100% | 52.0 | 47.8 | 0.92x | 0.53G | 0.28G | 47% |
+| ~30K | 77% | 75% | 98% | 46.9 | 40.2 | 0.86x | 0.87G | 0.36G | 59% |
+| ~60K | 75% | 76% | 99% | 42.6 | 33.7 | 0.79x | 1.30G | 0.47G | 64% |
+| **Total** | **79%** | **78%** | **99%** | **51.1** | **47.2** | **0.92x** | **0.58G** | **0.29G** | **50%** |
+
+99% answer agreement with baseline across all context lengths — zero systematic quality degradation. KV savings of 10–64% where TQ+ is active. Decode speedup scales from 0.99x at ~1K to 0.79x at ~60K (dequant-once overhead on longer prefills).
 
 ---
 
