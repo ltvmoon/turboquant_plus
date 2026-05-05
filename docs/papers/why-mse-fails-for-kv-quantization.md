@@ -479,9 +479,5 @@ Full ledger of all 35 hypotheses (including the EDEN-arc H1–H7, secondary fitt
 - Companion paper (algorithmic claim): [eden-optimal-s-revisit.md](./eden-optimal-s-revisit.md)
 - Issue #87 (Mitzenmacher): [TheTom/turboquant_plus#87](https://github.com/TheTom/turboquant_plus/issues/87)
 - Issue #89 (Portnoy): [TheTom/turboquant_plus#89](https://github.com/TheTom/turboquant_plus/issues/89)
-- Investigation log (private, full): `EDEN vs TurboQuant Investigation.md`
-- Algorithm sketch (private, draft): `Algorithm, Sub-Gaussian K Centroid Recalibration.md`
-- All experiment scripts: `/tmp/eden-investigation/h*.py`
-- Universal K candidate centroids: `/tmp/eden-investigation/universal_K_v2_b4.json`
-- KV dumps: `/tmp/eden-investigation/kv_dump/` (Qwen3-0.6B), `h_paper_expansion/llama_kv_dump/` (Llama-3.2-1B)
-- Related (cited if developed further): KIVI (Liu et al., 2024), HIGGS, SmoothQuant (Xiao et al.), OmniQuant, GPTQ
+- Experiment scripts: `scripts/eden-investigation/` in this repo (h*.py, f1–f3 KL test, universal-K candidate centroids)
+- Related work (cited if developed further): KIVI (Liu et al., 2024), HIGGS, SmoothQuant (Xiao et al.), OmniQuant, GPTQ
