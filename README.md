@@ -1,5 +1,7 @@
 # TurboQuant+
 
+> **🚀 TurboQuant KV cache compression is now in [vLLM](https://github.com/vllm-project/vllm)** ([PR #38479](https://github.com/vllm-project/vllm/pull/38479), merged April 2026): `--kv-cache-dtype turboquant_k8v4` and friends, with fused Triton store/decode kernels. The PR discussion drew on the asymmetric K/V findings from this repo.
+
 > ### [Getting Started Guide](docs/getting-started.md) | [Configuration Recommendations](docs/turboquant-recommendations.md) | [llama.cpp Fork](https://github.com/TheTom/llama-cpp-turboquant) | [Atlas](https://github.com/Avarok-Cybersecurity/atlas) | [Swift MLX Fork](https://github.com/ekryski/mlx-swift-lm/tree/alpha) | [vllm-swift](https://github.com/TheTom/vllm-swift) | [mlxcel Port](https://github.com/lablup/mlxcel) | [Commercial Support](https://x.com/no_stp_on_snek)
 
 > **🍎 On Apple Silicon and want the fastest path?** Use [ekryski/mlx-swift-lm](https://github.com/ekryski/mlx-swift-lm/tree/alpha) — Eric Kryski's Swift MLX implementation that I've been actively collaborating on. Native Swift, ~2.5x faster decode than Python mlx-lm, full TurboQuant+ support including turbo4v2 (4-bit K + 2-bit V). 144 tok/s on Qwen3.5-35B-A3B MoE at 4K on M5 Max. For OpenAI-compatible serving, use [vllm-swift](https://github.com/TheTom/vllm-swift) — a native Swift/Metal backend for vLLM built on mlx-swift-lm. No Python in the inference hot path, works with Hermes, OpenCode, and any OpenAI client. This llama.cpp repo is for cross-platform deployment (CUDA, ROCm, CPU, Metal).
